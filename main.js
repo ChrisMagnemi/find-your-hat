@@ -6,11 +6,12 @@ const fieldCharacter = '░';
 const pathCharacter = '*';
 
 class Field {
-    constructor(field){
+    constructor(field,){
         this._field = field;
         this._height = field[0].length;
         this._width = field.length;
         this._userPosition = { row: 0, col: 0 };
+        this._userTravelField = Field.generateBlankField(this._height,this._width);
     }
 
     get getHeight(){
@@ -22,12 +23,30 @@ class Field {
     get getUserPosition(){
         return this._userPosition;
     }
+    get getField(){
+        return this._field;
+    }
     // setter for _userPosition?
 
-    print(){
-        console.log("--------------------------");
+    printGameField(){
+        console.log("-----------Game Field---------------");
         this._field.forEach(row => {
             console.log(row.join(''));
+        });
+        console.log("--------------------------");
+    }
+    printUserPathField(){
+        console.log("----------User Path Field----------------");
+        this._userTravelField.forEach(pathRow => {
+            let arr = pathRow;
+            for (let i = 0; i < pathRow.length; i++){
+                if (pathRow[i] === pathCharacter) {
+                    arr[i] = pathCharacter;
+                } else {
+                    arr[i] = fieldCharacter;
+                }
+            }
+            console.log(arr.join(''));
         });
         console.log("--------------------------");
     }
@@ -76,53 +95,110 @@ class Field {
         // console.log(" >> End updateUserPosition << ");
     }
 
-    isUserInbounds(){
+    userMoveResult(){
         let userPos = this.getUserPosition;
+        let userTile = this._field[userPos.row][userPos.col];
 
         if (userPos.row < 0 || userPos.row >= this.getHeight || userPos.col < 0 || userPos.col >= this.getWidth){
-            console.log(" GAME OVER, you are OUT OF BOUNDS.");
-            return false;
+            // user went out of bounds - end game
+            return "GAME OVER, you are OUT OF BOUNDS";
+        } else if (userTile === hole ) {
+            // user lands on a hole - end game
+            return "GAME OVER, you landed in a hole";
+        } else if (userTile === hat ){
+            // user lands on their hat - winner and end game
+            return "YOU WON! You found your hat!";
         } else {
-            return true;
+            return;
         }
     }
 
     playGame(){
         // prompt for user action
-        let userAction = this.promptUserAction().toLowerCase();
+        let continuePlaying = true;
+        this.printUserPathField();
+        while (continuePlaying) {
+            let userAction = this.promptUserAction().toLowerCase();
 
-        // validate user input is a move
-        if (this.validateUserAction(userAction)){
-            console.log(` -- User Move ( ${userAction} ) is valid -- `);
-        } else {
-            console.log(" -- Invalid Move > Try again. -- ");
-            this.handleUserAction();
+            // validate user input is a move
+            if (this.validateUserAction(userAction)){
+                console.log(` -- User Move ( ${userAction} ) is valid -- `);
+            } else {
+                console.log(" -- Invalid Move > Try again. -- ");
+                // this.handleUserAction();
+            }
+
+            // update user position
+            this.updateUserPosition(userAction);
+            let newUserPosition = this.getUserPosition;
+            // console.log(" -- User moved to: ", this.getUserPosition, " -- ");
+
+            // check if user is inbounds, or win/loss. Stop game or continue accordingly
+            let stopGame = this.userMoveResult();
+            if (!stopGame){
+                console.log("Updated field: ");
+                this._userTravelField[newUserPosition.row][newUserPosition.col] = pathCharacter;
+                // this.printGameField();
+                this.printUserPathField();
+            } else {
+                console.log(stopGame);
+                continuePlaying = false;
+            }
         }
-
-        // update user position
-        this.updateUserPosition(userAction);
-        console.log(" -- User moved to: ", this.getUserPosition, " -- ");
-
-        // check if user is inbounds
-        if (!this.isUserInbounds()){
-            return;
-        }
-
-        // check what type of tile the user lands on
-
-
         // update field and show to user
 
+    } // end playGame
+
+    static generateField( height, width, holes) {
+        let newField = [];
+        for (let i = 0; i < height; i++){
+            newField.push([]);
+            for (let j = 0; j < width; j++){
+                newField[i].push(fieldCharacter);
+            };
+        };
+        newField[0][0] = pathCharacter;
+        let hatX = Math.floor(Math.random() * width);
+        let hatY = Math.floor(Math.random() * height);
+        newField[hatY][hatX] = hat;
+
+        for (let k = holes; k > 0; k--){
+            let holeX = hatX;
+            let holeY = hatY;
+            while (holeX === hatX) {
+                holeX = Math.floor(Math.random() * width);
+            };
+            while (holeY === hatY){
+                holeY = Math.floor(Math.random() * height);
+            };
+            newField[holeY][holeX] = hole;
+        }
+        newField[0][0] = pathCharacter;
+        return newField;
+    }
+
+    static generateBlankField( height, width) {
+        let newField = [];
+        for (let i = 0; i < height; i++){
+            newField.push([]);
+            for (let j = 0; j < width; j++){
+                newField[i].push(" ");
+            };
+        };
+        newField[0][0] = pathCharacter;
+        return newField
     }
 
 
 }
 
-const myField = new Field([
-    ['*', '░', 'O'],
-    ['░', 'O', '░'],
-    ['░', '^', '░'],
-  ]);
+// const myField = new Field([
+//     ['*', '░', 'O'],
+//     ['░', 'O', '░'],
+//     ['░', '^', '░'],
+//   ]);
 
-myField.print();
+let gameField = Field.generateField(5,5,1);
+const myField = new Field(gameField);
+
 myField.playGame();
