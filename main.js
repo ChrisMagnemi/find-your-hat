@@ -142,6 +142,8 @@ class Field {
                 this.printUserPathField();
             } else {
                 console.log(stopGame);
+                this.printGameField();
+                this.printUserPathField();
                 continuePlaying = false;
             }
         }
